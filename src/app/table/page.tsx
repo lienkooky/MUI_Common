@@ -113,7 +113,13 @@ const fields: ITableField[] = [
   {
     key: "setting",
     ariaLabel: "simple table",
-    usePageNation: false,
+    pagiNation: {
+      used: true,
+      page: 1, //? 시작 페이지 번호
+      totalNum: 10, //? 보여주고 싶은 총 페이지 번호
+      totalCount: 357, //?총페이지 갯수
+      spacing: 4, //? 테이블과 페이지네이션 사이 거리 : "margin-top이 8px씩 잡힙니다"
+    },
     useFixedHeader: true,
   },
   {
