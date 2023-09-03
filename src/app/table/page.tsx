@@ -1,6 +1,6 @@
-import DefaultTable, {
-  ITableField,
-} from "@/src/components/tables/DefaultTable";
+import DefaultPagination from "@/src/components/tables/DefaultPagination";
+import DefaultTable from "@/src/components/tables/DefaultTable";
+import { IDynamic, ITableField } from "@/src/types/defaultTable";
 import React from "react";
 
 // const childFields: ITableField[] = [
@@ -111,48 +111,51 @@ import React from "react";
 
 const fields: ITableField[] = [
   {
-    key: "setting",
-    ariaLabel: "simple table",
-    pagiNation: {
-      used: true,
-      page: 1, //? 시작 페이지 번호
-      totalNum: 10, //? 보여주고 싶은 총 페이지 번호
-      totalCount: 357, //?총페이지 개수
-      spacing: 4, //? 테이블과 페이지네이션 사이 거리 : "margin-top이 8px씩 잡힙니다"
-    },
-    useFixedHeader: true,
+    key: "userName",
+    label: "고객명",
   },
   {
-    key: "checkbox",
+    key: "hpNumber",
+    label: "휴대폰번호",
   },
   {
-    key: "fromCouncelDate",
-    label: "시작일자",
+    key: "gender",
+    label: "성별",
   },
   {
-    key: "toCnslDt",
-    label: "종료일자",
-  },
-  {
-    key: "invstIclnCd",
+    key: "investType",
     label: "투자성향코드",
+    style: { header: { display: "none" } },
   },
   {
-    key: "searchKeyword",
-    label: "검색창",
+    key: "investTypeNm",
+    label: "투자성향",
   },
   {
-    key: "gubunCode",
-    label: "구분코드",
-    useIcon: true,
+    key: "portRate",
+    label: "수익률",
   },
   {
-    key: "cstDvsn",
-    label: "투자목표코드",
+    key: "birthDay",
+    label: "생일",
   },
   {
-    key: "cstCnslPgsStep",
-    label: "상담진행단계",
+    key: "firstDate",
+    label: "가입일자",
+  },
+  {
+    key: "invAmount",
+    label: "총투자금액",
+  },
+  {
+    key: "uid",
+    label: "고객userId",
+    style: { header: { display: "none" } },
+  },
+  {
+    key: "account",
+    label: "고객계좌번호",
+    style: { header: { display: "none" } },
   },
 ];
 
@@ -188,7 +191,33 @@ const tableData = [
 
 function page() {
   return (
-    <DefaultTable rowKey="invstIclnCd" fields={fields} tableData={tableData} />
+    <>
+      <DefaultTable
+        rowKey="invstIclnCd"
+        fields={fields}
+        tableData={tableData}
+        isFixedHeader
+        onClick={(row) =>
+          function (row: IDynamic): void {
+            console.log(row);
+          }
+        }
+        ariaLabel="simple table"
+        containerClassName="consulting"
+      />
+      <DefaultPagination
+        page={1}
+        pageSize={20}
+        totalCount={200}
+        limit={10}
+        onClick={function (
+          event: React.ChangeEvent<unknown>,
+          page: number
+        ): void {
+          throw new Error("Function not implemented.");
+        }}
+      />
+    </>
   );
 }
 

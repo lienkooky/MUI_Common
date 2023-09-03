@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useEffect, useState, Fragment } from "react";
+import {
+  ChangeEvent,
+  FunctionComponent,
+  ReactElement,
+  useEffect,
+  useState,
+} from "react";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
@@ -9,184 +15,167 @@ import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Paper from "@mui/material/Paper";
 import Checkbox from "@mui/material/Checkbox";
-import IconButton from "@mui/material/IconButton";
-import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
-import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
-import Pagination from "@mui/material/Pagination";
-import Stack from "@mui/material/Stack";
-
-export interface IDynamic {
-  [key: string]: string | number | object | [] | null | undefined | boolean;
-}
-
-export interface ITableField {
-  key: string;
-  label?: string;
-  style?: {
-    header?: object;
-    body?: object;
-  };
-  calssName?: {
-    header?: string;
-    body?: string;
-  };
-  component?: {
-    obj?: object;
-  };
-  sort?: string;
-  useIcon?: boolean;
-  pagiNation?: {
-    used: boolean;
-    page?: number; //? 시작 페이지 번호
-    totalNum: number; //? 보여주고 싶은 페이지 총 수
-    totalCount: number; //? 총페이지 갯수
-    spacing?: number; //? 테이블과 페이지네이션 사이 거리
-    size?: "small" | "medium" | "large"; //? 컴포넌트 사이즈
-    variant?: "outlined" | "text"; //? 테두리
-    shape?: "circular" | "rounded"; //? 페이지 숫자 모양
-    onChange?: Function; //?함수
-  };
-  useFixedHeader?: boolean;
-  ariaLabel?: "simple table" | "a dense table" | "sticky table" | undefined;
-  [key: string]: string | number | object | [] | null | undefined | boolean;
-}
+import { IDynamic, ITableField } from "@/src/types/defaultTable";
 
 interface IProps<T> {
   fields: ITableField[];
-  tableData?: T[];
+  tableData: T[];
   rowKey: keyof T;
+  isFixedHeader?: boolean;
+  ariaLabel?:
+    | "simple table"
+    | "a dense table"
+    | "sticky table"
+    | "customized table"
+    | undefined;
+  containerClassName?: string;
+  trRowHeadClassName?: string;
+  trRowBodyClassName?: string;
+  onChange?: (selected: string[]) => void;
+  onClick?: (row: object) => void;
 }
 
-function DefaultTable<T>({ fields, tableData, rowKey }: IProps<T>) {
-  const [fieldData, setFieldData] = useState<ITableField[]>(
-    fields.filter((el) => el.key !== "setting")
-  );
-  const [settingData, setSettingData] = useState(
-    Object.assign({}, ...fields.filter((el) => el.key === "setting"))
-  );
-  const [open, setOpen] = useState(false);
+function DefaultTable<T>({
+  fields,
+  tableData,
+  rowKey,
+  ariaLabel = "simple table",
+  isFixedHeader = false,
+  containerClassName,
+  trRowHeadClassName,
+  trRowBodyClassName,
+  onChange,
+  onClick,
+}: IProps<T>): ReactElement {
+  const [isCheckedAll, setIsCheckedAll] = useState(false); // ? 전체 checkBox 선택
+  const [checkedList, setCheckedList] = useState<string[]>([]);
 
-  console.log("settingData", settingData);
-  console.log("fieldData", fieldData);
-
+  // * host Component에서 onChange함수 호출함 checkbox 상태값 변경 가능
   useEffect(() => {
-    setSettingData(
-      Object.assign({}, ...fields.filter((el) => el.key === "setting"))
-    ); //? settingData
-    setFieldData(fields.filter((el) => el.key !== "setting")); //? setting 제외
-  }, [fields]);
+    if (onChange) onChange(checkedList);
+  }, [onChange, checkedList]);
+
+  // * checkbox 전체 선택
+  const onSelectAllClick = (event: ChangeEvent): void => {
+    if (!tableData) return;
+
+    const { checked } = event.target as HTMLInputElement;
+
+    if (checked && tableData) {
+      setCheckedList(tableData.map((item, index) => index.toString()));
+    } else {
+      setCheckedList([]);
+    }
+
+    setIsCheckedAll(checked);
+  };
+
+  // * checkobx 개별 선택
+  const onChangeCheckedRow = (e: ChangeEvent) => {
+    const { name, checked } = e.target as HTMLInputElement;
+    const updatedCheckedList = checked
+      ? [...checkedList, name]
+      : checkedList.filter((el) => el !== name);
+
+    setCheckedList(updatedCheckedList);
+    // * 개별 checkbox 전부 선택 시
+    setIsCheckedAll(tableData?.length === updatedCheckedList.length);
+  };
 
   const getNode = (field: ITableField, item: T, index: number) => {
-    let text = (item as IDynamic)[field.key as string];
-
-    console.log("field", field);
-    console.log("item", item);
+    const text = (item as IDynamic)[field.key as string];
 
     if (field.key === "checkbox") {
       return (
         <Checkbox
           color="primary"
-          // indeterminate={numSelected > 0 && numSelected < rowCount}
-          // checked={rowCount > 0 && numSelected === rowCount}
-          // onChange={onSelectAllClick}
+          name={index.toString()}
+          checked={checkedList.includes(index.toString())}
+          onChange={onChangeCheckedRow}
           inputProps={{
             "aria-label": "select all desserts",
           }}
         />
       );
     }
-    if (field.useIcon) {
-      return (
-        <>
-          {text}
-          <IconButton
-            aria-label="expand row"
-            size="small"
-            onClick={() => setOpen(!open)}
-          >
-            {open ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
-          </IconButton>
-        </>
-      );
+    if (field.component) {
+      const CustomComponent = field.component.obj as FunctionComponent;
+      return <CustomComponent {...(item as IDynamic)} />;
     }
+
     return <>{text}</>;
   };
 
   return (
-    <Stack spacing={settingData.pagiNation.spacing || 3}>
-      <TableContainer component={Paper}>
-        <Table
-          stickyHeader={settingData.useFixedHeader || false}
-          aria-label={settingData.ariaLabel || "simple table"}
-        >
-          <TableHead>
-            <TableRow>
-              {fieldData &&
-                fieldData.map((field) => (
-                  <TableCell
-                    key={field.key as string}
-                    style={field?.style?.header}
-                    className={field?.calssName?.header}
-                    padding={field.key === "checkbox" ? "checkbox" : undefined}
-                  >
-                    {field.key === "checkbox" ? (
-                      <Checkbox
-                        color="primary"
-                        // indeterminate={numSelected > 0 && numSelected < rowCount}
-                        // checked={rowCount > 0 && numSelected === rowCount}
-                        // onChange={onSelectAllClick}
-                        inputProps={{
-                          "aria-label": "select all desserts",
-                        }}
-                      />
-                    ) : (
-                      field.label
-                    )}
+    <TableContainer component={Paper} className={containerClassName}>
+      <Table stickyHeader={isFixedHeader} aria-label={ariaLabel}>
+        {/* //? header */}
+        <TableHead>
+          <TableRow className={trRowHeadClassName}>
+            {fields.map((field) => (
+              <TableCell
+                key={field.key}
+                style={field?.style?.header}
+                className={field?.calssName?.header}
+                padding={field.key === "checkbox" ? "checkbox" : undefined}
+              >
+                {field.key === "checkbox" ? (
+                  <Checkbox
+                    color="primary"
+                    checked={isCheckedAll}
+                    onChange={onSelectAllClick}
+                    inputProps={{
+                      "aria-label": "select all desserts",
+                    }}
+                  />
+                ) : (
+                  field.label
+                )}
+              </TableCell>
+            ))}
+          </TableRow>
+        </TableHead>
+        {/* // ? body */}
+        <TableBody>
+          {tableData?.length ? (
+            tableData.map((row, rowIndex) => (
+              <TableRow
+                component="tr"
+                sx={{
+                  cursor: onClick ? "pointer" : "default",
+                  "&:hover": onClick
+                    ? {
+                        backgroundColor: "lightgrey",
+                      }
+                    : {},
+                }}
+                onClick={() => onClick?.(row as IDynamic)}
+                key={row[rowKey] as string}
+                className={trRowBodyClassName}
+              >
+                {fields.map((field) => (
+                  <TableCell style={field?.style?.header} key={field.key}>
+                    {getNode(field, row, rowIndex)}
                   </TableCell>
                 ))}
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {tableData && tableData.length ? (
-              tableData.map((item, index) => (
-                <TableRow key={item[rowKey] as string}>
-                  {fieldData &&
-                    fieldData.map((field) => (
-                      <TableCell
-                        key={field.key}
-                        padding={
-                          field.key === "checkbox" ? "checkbox" : undefined
-                        }
-                      >
-                        {getNode(field, item, index)}
-                      </TableCell>
-                    ))}
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={fieldData.length}>데이터 없어용</TableCell>
               </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
-      {settingData.pagiNation.used ? (
-        <Pagination
-          showFirstButton
-          showLastButton
-          defaultPage={settingData.pagiNation.page}
-          count={settingData.pagiNation.totalNum}
-          boundaryCount={settingData.pagiNation.totalNum}
-          size={settingData.pagiNation.size || "medium"}
-          variant={settingData.pagiNation.variant || "text"}
-          shape={settingData.pagiNation.shape || "rounded"}
-          onChange={settingData.pagiNation.onChage || undefined}
-        />
-      ) : (
-        ""
-      )}
-    </Stack>
+            ))
+          ) : (
+            <TableRow>
+              <TableCell
+                colSpan={
+                  fields.filter((el) => el.style?.header?.display !== "none")
+                    .length
+                }
+                align="center"
+              >
+                데이터가 없습니다.
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
+    </TableContainer>
   );
 }
 
